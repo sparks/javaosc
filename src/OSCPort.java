@@ -1,4 +1,4 @@
-package com.illposed.osc;
+package javaosc;
 
 import java.net.*;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com.illposed.osc.utility;
+package javaosc.utility;
 
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;

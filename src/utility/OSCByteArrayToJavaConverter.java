@@ -1,9 +1,9 @@
-package com.illposed.osc.utility;
+package javaosc.utility;
 
 import java.math.BigInteger;
 import java.util.Date;
 
-import com.illposed.osc.*;
+import javaosc.*;
 
 /**
  * Utility class to convert a byte array conforming to the OSC byte stream format

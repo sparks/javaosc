@@ -1,15 +1,15 @@
-package com.illposed.osc;
+package javaosc;
 
 import java.net.*;
 import java.io.IOException;
-import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
+import javaosc.utility.OSCByteArrayToJavaConverter;
 
 /**
  * OSCPortOut is the class that sends OSC messages to a specific address and port.
  *
  * To send an OSC message, call send().
  * <p>
- * An example based on com.illposed.osc.test.OSCPortTest::testMessageWithArgs() :
+ * An example based on javaosc.test.OSCPortTest::testMessageWithArgs() :
  * <pre>
 	OSCPort sender = new OSCPort();
 	Object args[] = new Object[2];
@@ -55,6 +55,16 @@ public class OSCPortOut extends OSCPort {
 	 */
 	public OSCPortOut(InetAddress newAddress) throws SocketException {
 		this(newAddress, defaultSCOSCPort());
+	}
+	
+	public OSCPortOut(String newAddress, int newPort) throws UnknownHostException {
+		InetAddress[] hits = InetAddress.getAllByName(newAddress);
+		if(hits != null) {
+			address = hits[0];
+		} else {
+			address = InetAddress.getLocalHost();
+		}
+		System.out.println(hits);
 	}
 
 	/**

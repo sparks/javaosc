@@ -1,13 +1,15 @@
 /* $Id$
  * Created on 28.10.2003
  */
-package com.illposed.osc.utility;
+package javaosc.utility;
 
-import com.illposed.osc.*;
+import javaosc.*;
 
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import processing.core.PApplet;
+import java.lang.reflect.Method;
 
 /**
  * @author cramakrishnan
@@ -24,12 +26,31 @@ import java.util.Hashtable;
 public class OSCPacketDispatcher {
 	// use Hashtable for JDK1.1 compatability
 	private Hashtable<String, OSCListener> addressToClassTable = new Hashtable<String, OSCListener>();
-	
+	PApplet parent;
+	Method[] eventMethods;
 	/**
 	 * 
 	 */
+	public OSCPacketDispatcher(PApplet parent) {
+		this.parent = parent;
+		eventMethods = new Method[2];
+		try {
+			eventMethods[0] = parent.getClass().getMethod("OSCMessage", new Class[] { Date.class, OSCMessage.class});
+		} catch (Exception e) {
+			// no such method, or an error.. which is fine, just ignore
+		}
+		try {
+			eventMethods[1] = parent.getClass().getMethod("OSCMessage", new Class[] { OSCMessage.class});
+		} catch (Exception e) {
+			// no such method, or an error.. which is fine, just ignore
+		}
+	}
+	
 	public OSCPacketDispatcher() {
-		super();
+		this.parent = parent;
+		eventMethods = new Method[2];
+		eventMethods[0] = null;
+		eventMethods[1] = null;
 	}
 
 	public void addListener(String address, OSCListener listener) {
@@ -73,5 +94,23 @@ public class OSCPacketDispatcher {
 				listener.acceptMessage(time, message);
 			}
 		}
+		if(eventMethods[0] != null) {
+			try {
+				eventMethods[0].invoke(parent, new Object[] { time, message });
+			} catch (Exception e) {
+				System.err.println("\nJavaOSC event method 0 disabled...");
+				e.printStackTrace();
+				eventMethods[0] = null;
+			}
+		}
+			if(eventMethods[1] != null) {
+				try {
+					eventMethods[1].invoke(parent, new Object[] { message });
+				} catch (Exception e) {
+					System.err.println("\nJavaOSC event method 0 disabled...");
+					e.printStackTrace();
+					eventMethods[1] = null;
+				}
+			}
 	}
 }

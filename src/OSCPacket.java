@@ -1,6 +1,6 @@
-package com.illposed.osc;
+package javaosc;
 
-import com.illposed.osc.utility.*;
+import javaosc.utility.*;
 
 /**
  * OSCPacket is the abstract superclass for the various

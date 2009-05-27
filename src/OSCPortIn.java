@@ -1,14 +1,15 @@
-package com.illposed.osc;
+package javaosc;
 
 import java.net.*;
 import java.io.IOException;
-import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
-import com.illposed.osc.utility.OSCPacketDispatcher;
+import javaosc.utility.OSCByteArrayToJavaConverter;
+import javaosc.utility.OSCPacketDispatcher;
+import processing.core.PApplet;
 
 /**
  * OSCPortIn is the class that listens for OSC messages.
  * <p>
- * An example based on com.illposed.osc.test.OSCPortTest::testReceiving() :
+ * An example based on javaosc.test.OSCPortTest::testReceiving() :
  * <pre>
  
 	receiver = new OSCPortIn(OSCPort.defaultSCOSCPort());
@@ -38,16 +39,28 @@ public class OSCPortIn extends OSCPort implements Runnable {
 	// state for listening
 	protected boolean isListening;
 	protected OSCByteArrayToJavaConverter converter = new OSCByteArrayToJavaConverter();
-	protected OSCPacketDispatcher dispatcher = new OSCPacketDispatcher();
+	protected OSCPacketDispatcher dispatcher;
+	PApplet parent;
 	
 	/**
 	 * Create an OSCPort that listens on the specified port.
 	 * @param port UDP port to listen on.
 	 * @throws SocketException
 	 */
-	public OSCPortIn(int port) throws SocketException {
+	public OSCPortIn(PApplet parent, int port) throws SocketException {
+		this.parent = parent;
 		socket = new DatagramSocket(port);
 		this.port = port;
+		dispatcher = new OSCPacketDispatcher(parent);
+		startListening();
+	}
+	
+	public OSCPortIn(int port) throws SocketException {
+		this.parent = parent;
+		socket = new DatagramSocket(port);
+		this.port = port;
+		dispatcher = new OSCPacketDispatcher();
+		startListening();
 	}
 
 	/**

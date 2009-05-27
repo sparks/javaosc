@@ -1,9 +1,9 @@
-package com.illposed.osc;
+package javaosc;
 
 import java.util.Enumeration;
 import java.util.Vector;
 
-import com.illposed.osc.utility.*;
+import javaosc.utility.*;
 
 /**
  * An simple (non-bundle) OSC message. An OSC message is made up of 
