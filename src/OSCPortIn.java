@@ -1,133 +1,158 @@
 package javaosc;
 
-import java.net.*;
-import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.DatagramPacket;
+import java.net.SocketException;
+
+import java.util.Vector;
+import java.util.Date;
+
 import javaosc.utility.OSCByteArrayToJavaConverter;
-import javaosc.utility.OSCPacketDispatcher;
+
 import processing.core.PApplet;
+import java.lang.reflect.Method;
 
-/**
- * OSCPortIn is the class that listens for OSC messages.
- * <p>
- * An example based on javaosc.test.OSCPortTest::testReceiving() :
- * <pre>
- 
-	receiver = new OSCPortIn(OSCPort.defaultSCOSCPort());
-	OSCListener listener = new OSCListener() {
-		public void acceptMessage(java.util.Date time, OSCMessage message) {
-			System.out.println("Message received!");
-		}
-	};
-	receiver.addListener("/message/receiving", listener);
-	receiver.startListening();
-
- * </pre>
- * <p>		
- * Then, using a program such as SuperCollider or sendOSC, send a message
- * to this computer, port 57110 (defaultSCOSCPort), with the address /message/receiving
- * <p>
- * Copyright (C) 2004-2006, C. Ramakrishnan / Illposed Software.
- * All rights reserved.
- * <p>
- * See license.txt (or license.rtf) for license information.
- *
- * @author Chandrasekhar Ramakrishnan
- * @version 1.0
- */
 public class OSCPortIn extends OSCPort implements Runnable {
 
-	// state for listening
-	protected boolean isListening;
+	private boolean isListening;
+	
 	protected OSCByteArrayToJavaConverter converter = new OSCByteArrayToJavaConverter();
-	protected OSCPacketDispatcher dispatcher;
+	
 	PApplet parent;
 	
-	/**
-	 * Create an OSCPort that listens on the specified port.
-	 * @param port UDP port to listen on.
-	 * @throws SocketException
-	 */
-	public OSCPortIn(PApplet parent, int port) throws SocketException {
-		this.parent = parent;
-		socket = new DatagramSocket(port);
-		this.port = port;
-		dispatcher = new OSCPacketDispatcher(parent);
-		startListening();
+	Method[] eventMethod;
+	
+	Vector<OSCListener> listeners;
+	
+	public OSCPortIn(int port) {
+		this(null, port);
 	}
 	
-	public OSCPortIn(int port) throws SocketException {
+	public OSCPortIn(PApplet parent, int port) {
 		this.parent = parent;
-		socket = new DatagramSocket(port);
 		this.port = port;
-		dispatcher = new OSCPacketDispatcher();
-		startListening();
+		listeners = new Vector<OSCListener>();
+		try {
+			socket = new DatagramSocket(port);
+			startListening();
+		} catch (SocketException e) {
+			System.err.println("OSCPortIn couldn't bind to port "+port+".");
+			e.printStackTrace();
+		}
+		
+		eventMethod = new Method[3];
+		
+		try {
+			eventMethod[0] = parent.getClass().getMethod("OSCMessage", new Class[] { OSCMessage.class});
+		} catch (Exception e) {
+			// no such method, or an error.. which is fine, just ignore
+		}
+		try {
+			eventMethod[1] = parent.getClass().getMethod("OSCMessage", new Class[] { OSCMessage.class, Integer.TYPE});
+		} catch (Exception e) {
+			// no such method, or an error.. which is fine, just ignore
+		}
+		try {
+			eventMethod[2] = parent.getClass().getMethod("OSCMessage", new Class[] { OSCMessage.class, Integer.TYPE, Date.class});
+		} catch (Exception e) {
+			// no such method, or an error.. which is fine, just ignore
+		}
 	}
-
-	/**
-	 * Run the loop that listens for OSC on a socket until isListening becomes false.
-	 * @see java.lang.Runnable#run()
-	 */
+	
 	public void run() {
-			// buffers were 1500 bytes in size, but this was
-			// increased to 1536, as this is a common MTU
 		byte[] buffer = new byte[1536];
 		DatagramPacket packet = new DatagramPacket(buffer, 1536);
 		while (isListening) {
 			try {
 				socket.receive(packet);
 				OSCPacket oscPacket = converter.convert(buffer, packet.getLength());
-				dispatcher.dispatchPacket(oscPacket);
-			} catch (IOException e) {
+				dispatchPacket(oscPacket);
+			} catch (Exception e) {
+				System.err.println("Error receiving packet on port "+port+".");
 				e.printStackTrace();
 			}
 		}
 	}
 	
-	/**
-	 * Start listening for incoming OSCPackets
-	 */
+	public void dispatchPacket(OSCPacket packet) {
+		dispatchPacket(packet, null);
+	}
+	
+	public void dispatchPacket(OSCPacket packet, Date timestamp) {
+		if (packet instanceof OSCBundle) dispatchBundle((OSCBundle) packet);
+		else dispatchMessage((OSCMessage) packet, timestamp);
+	}
+	
+	
+	private void dispatchBundle(OSCBundle bundle) {
+		Date timestamp = bundle.getTimestamp();
+		
+		OSCPacket[] packets = bundle.getPackets();
+		
+		for(OSCPacket packet : packets) {
+			dispatchPacket(packet, timestamp);
+		}
+	}
+	
+	private void dispatchMessage(OSCMessage message) {
+		dispatchMessage(message, null);
+	}
+	
+	private void dispatchMessage(OSCMessage message, Date time) {
+		for(OSCListener listener : listeners) {
+			listener.acceptMessage(time, message);
+		}
+		
+		if(eventMethod[0] != null) {
+			try {
+				eventMethod[0].invoke(parent, new Object[] { message });
+			} catch (Exception e) {
+				System.err.println("\nJavaOSC event method 0 disabled...");
+				e.printStackTrace();
+				eventMethod[0] = null;
+			}
+		}
+		if(eventMethod[1] != null) {
+			try {
+				eventMethod[1].invoke(parent, new Object[] { message, port });
+			} catch (Exception e) {
+				System.err.println("\nJavaOSC event method 1 disabled...");
+				e.printStackTrace();
+				eventMethod[1] = null;
+			}
+		}
+		if(eventMethod[2] != null) {
+			try {
+				eventMethod[2].invoke(parent, new Object[] { message, port, time });
+			} catch (Exception e) {
+				System.err.println("\nJavaOSC event method 2 disabled...");
+				e.printStackTrace();
+				eventMethod[2] = null;
+			}
+		}
+	}
+	
 	public void startListening() {
 		isListening = true;
 		Thread thread = new Thread(this);
 		thread.start();
 	}
 	
-	/**
-	 * Stop listening for incoming OSCPackets
-	 */
 	public void stopListening() {
 		isListening = false;
 	}
 	
-	/**
-	 * Am I listening for packets?
-	 */
 	public boolean isListening() {
 		return isListening;
 	}
 	
-	/**
-	 * Register the listener for incoming OSCPackets addressed to an Address
-	 * @param anAddress  the address to listen for
-	 * @param listener   the object to invoke when a message comes in
-	 */
-	public void addListener(String anAddress, OSCListener listener) {
-		dispatcher.addListener(anAddress, listener);
-	}
-
-	/**
-	 * Register the listener for all incoming OSCPackets addressed to an Address
-	 * @param listener   the object to invoke when a message comes in
-	 */
+	
 	public void addListener(OSCListener listener) {
-		dispatcher.addListener("", listener);
+		listeners.add(listener);
 	}
 	
-	/**
-	 * Close the socket and free-up resources. It's recommended that clients call
-	 * this when they are done with the port.
-	 */
 	public void close() {
 		socket.close();
 	}
+	
 }

@@ -6,12 +6,8 @@ OSCPortIn in;
 void setup() {
 	size(200, 200);
 	
-	try {
-		out = new OSCPortOut("127.0.0.1", 57120);
-		in = new OSCPortIn(this, 57120);
-	} catch (Exception e) {
-		
-	}
+	out = new OSCPortOut("127.0.0.1", 57120);
+	in = new OSCPortIn(this, 57120);
 }
 
 void draw() {
@@ -19,16 +15,11 @@ void draw() {
 }
 
 void mousePressed() {
-	Object args[] = new Object[1];
-	args[0] = 10;
-	OSCMessage msg = new OSCMessage("/rect", args);
-	try {
-		out.send(msg);
-	} catch (Exception e) {
-		println("Couldn't send"+e);
-	}
+	Object[] args = {1, 2, "Hello"};
+	OSCMessage msg = new OSCMessage("/test", args);
+	out.send(msg);
 }
 
 void OSCMessage(OSCMessage message) {
-	println("Bang");
+	println(message);
 }
