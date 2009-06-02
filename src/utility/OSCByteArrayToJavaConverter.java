@@ -264,7 +264,7 @@ public class OSCByteArrayToJavaConverter {
 			}
 		}
 		
-		if (isImmediate) return OSCBundle.TIMESTAMP_IMMEDIATE;
+		if (isImmediate) return new Date(System.currentTimeMillis());
 
 		BigInteger secsSince1900 = new BigInteger(secondBytes);		
 		long secsSince1970 =  secsSince1900.longValue() - OSCBundle.SECONDS_FROM_1900_to_1970.longValue();

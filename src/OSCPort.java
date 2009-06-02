@@ -12,6 +12,10 @@ public abstract class OSCPort {
 		socket.close();
 	}
 	
+	public int getPort() {
+		return port;
+	}
+	
 	public void close() {
 		socket.close();
 	}

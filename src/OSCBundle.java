@@ -15,13 +15,11 @@ public class OSCBundle extends OSCPacket {
 	public static final BigInteger SECONDS_FROM_1900_to_1970 =
 		new BigInteger("2208988800");
 		
-	public static final Date TIMESTAMP_IMMEDIATE = new Date(0);
-
 	protected Date timestamp;
 	protected Vector<OSCPacket> packets;
 
 	public OSCBundle() {
-		this(null, TIMESTAMP_IMMEDIATE);
+		this(null, new Date(System.currentTimeMillis()));
 	}
 	
 	public OSCBundle(Date timestamp) {
@@ -29,7 +27,7 @@ public class OSCBundle extends OSCPacket {
 	}
 
 	public OSCBundle(OSCPacket[] packets) {
-		this(packets, TIMESTAMP_IMMEDIATE);
+		this(packets, new Date(System.currentTimeMillis()));
 	}
 
 	public OSCBundle(OSCPacket[] packets, Date timestamp) {
@@ -63,7 +61,7 @@ public class OSCBundle extends OSCPacket {
 	}
 
 	protected void computeTimeTagByteArray(OSCJavaToByteArrayConverter stream) {
-		if ((null == timestamp) || (timestamp == TIMESTAMP_IMMEDIATE)) {
+		if ((null == timestamp) || (timestamp == new Date(System.currentTimeMillis()))) {
 			stream.write((int) 0);
 			stream.write((int) 1);
 			return;

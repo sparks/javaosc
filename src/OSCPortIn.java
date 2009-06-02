@@ -31,7 +31,9 @@ public class OSCPortIn extends OSCPort implements Runnable {
 	public OSCPortIn(PApplet parent, int port) {
 		this.parent = parent;
 		this.port = port;
+		
 		listeners = new Vector<OSCListener>();
+		
 		try {
 			socket = new DatagramSocket(port);
 			startListening();
@@ -100,7 +102,7 @@ public class OSCPortIn extends OSCPort implements Runnable {
 	
 	private void dispatchMessage(OSCMessage message, Date time) {
 		for(OSCListener listener : listeners) {
-			listener.acceptMessage(time, message);
+			listener.acceptMessage(time, message, port);
 		}
 		
 		if(eventMethod[0] != null) {
